@@ -1,50 +1,63 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
+import pandas as pd
 
+# Setup Chrome driver
 driver = webdriver.Chrome()
 driver.maximize_window()
+
+# Lists to store extracted data
 laptop_names = []
 laptop_prices = []
-laptop_reviews= []
+laptop_reviews = []
 laptop_links = []
 
-
+# Loop through Amazon pages
 for page in range(1, 3):
     url = f"https://www.amazon.in/s?k=laptop&page={page}"
     driver.get(url)
     time.sleep(3)
-    all_products = driver.find_elements(By.XPATH, "//div[@data-component-type = 's-search-result']")
+
+    all_products = driver.find_elements(By.XPATH, "//div[@data-component-type='s-search-result']")
 
     for product in all_products:
-        names = product.find_elements(By.XPATH,".//h2[@class='a-size-medium a-spacing-none a-color-base a-text-normal']/span")
-        for name in names :
-            laptop_names.append(name.text)
-
-        prices = product.find_elements(By.XPATH,".//span[@class='a-price-whole']")
-        for price in prices:
-            laptop_prices.append(price.text)
-
-        try :
-            if len(product.find_elements(By.XPATH,".//span[@class='a-size-base s-underline-text']"))>0:
-                reviews = product.find_elements(By.XPATH,".//span[@class='a-size-base s-underline-text']")
-                for review in reviews:
-                    laptop_reviews.append(review.text)
-            else:
-                laptop_reviews.append("0")
+        # Name
+        try:
+            name = product.find_element(By.XPATH, ".//h2/span").text
         except:
-            pass
+            name = "N/A"
+        laptop_names.append(name)
 
-        links = product.find_elements(By.XPATH, ".//a[@class='a-link-normal s-line-clamp-2 s-link-style a-text-normal']")
-        for link in links:
-            laptop_links.append(link.get_attribute("href"))
+        # Price
+        try:
+            price = product.find_element(By.XPATH, ".//span[@class='a-price-whole']").text
+        except:
+            price = "N/A"
+        laptop_prices.append(price)
 
+        # Review Count
+        try:
+            review = product.find_element(By.XPATH, ".//span[@class='a-size-base s-underline-text']").text
+        except:
+            review = "0"
+        laptop_reviews.append(review)
 
-# Save to CSV using pandas
-import pandas as pd
-df = pd.DataFrame(zip(laptop_names,laptop_prices,laptop_reviews,laptop_links),columns=['laptop_names','laptop_prices','laptop_reviews','laptop_links'])
+        # Product Link
+        try:
+            link = product.find_element(By.XPATH, ".//a[@class='a-link-normal s-line-clamp-2 s-link-style a-text-normal']").get_attribute("href")
+        except:
+            link = "N/A"
+        laptop_links.append(link)
+
+# Close the driver
+driver.quit()
+
+# Save to CSV
+df = pd.DataFrame({
+    'laptop_names': laptop_names,
+    'laptop_prices': laptop_prices,
+    'laptop_reviews': laptop_reviews,
+    'laptop_links': laptop_links
+})
 df.to_csv(r"D:\pycharm projects\PythonProject1\.venv\Live_laptop.csv", index=False)
-
-
-
-
